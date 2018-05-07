@@ -19,6 +19,24 @@ def qt_ui_library(name, ui, deps):
       deps = deps,
   )
 
+# Turns a .qrc file into a cc_library.
+# Note that deps must be listed explicitly because bazel doesn't allow reading
+# files at analysis time
+def qt_resource(name, qrc_file, deps):
+  outfile = name + "_gen.cpp"
+  native.genrule(
+    name = name + "_gen",
+    srcs = [qrc_file] + deps,
+    outs = [outfile],
+    cmd = "rcc --name $(OUTS) --output $(OUTS) $(location %s)" % qrc_file,
+  )
+
+  native.cc_library(
+    name = name,
+    srcs = [outfile],
+    alwayslink = 1,
+  )
+
 def qt_cc_library(name, src, hdr, normal_hdrs=[], deps=None, ui=None,
                   ui_deps=None, **kwargs):
   """Compiles a QT library and generates the MOC for it.
